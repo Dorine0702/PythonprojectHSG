@@ -1,0 +1,2 @@
+# PythonprojectHSG
+Trading Game
