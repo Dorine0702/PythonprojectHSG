@@ -27,7 +27,7 @@ def get_live_data():
             stock=yf.Ticker(symbol) 
             #stock.history is a dataframe. The following line captures the item on the last row of the column "close"
             #iloc[0] selects the first item of the series obtained by stock.history(period="1d").tail(1)["close"]
-            price=stock.history(period="5d").tail(1)["Close"].iloc[0]
+            price=stock.history(period="1d").tail(1)["Close"].iloc[0]
             #corresponding prices added to the prices dictionary
             livestock_prices[names]=price
         except Exception as e:
