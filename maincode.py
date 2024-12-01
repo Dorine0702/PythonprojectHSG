@@ -91,8 +91,6 @@ def prepare_data(prices_list):
 get_live_data()
 #next rounds
 simulate_stock_prices()
-simulate_stock_prices()
-simulate_stock_prices()
 
 #to display the stock prices (either list_lastprices as argument or livestock_prices if it is the first round)
 #returns a dictionary
