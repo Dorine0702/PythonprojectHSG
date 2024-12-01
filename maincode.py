@@ -10,7 +10,7 @@ import pandas as pd
 
 # define the stocks traded in the game
 stocks={"Nvidia":"NVDA","Meta":"META","Microsoft":"MSFT","Alphabet":"GOOGL","AMD":"AMD"}
-print(f"the stocks being traded are:{stocks.keys()}")
+print(f"the stocks being traded are:{list(stocks.keys())}") #converted into a list for a better output
 
 livestock_prices={}
 stockprices_history=pd.DataFrame(columns=["name","price"]) #store all the stock prices (inclusive forecasts) in a dataframe as an history
@@ -41,7 +41,7 @@ def get_live_data():
     return livestock_prices
 
 
-print("Here are the current stock prices:",get_live_data())
+#print("Here are the current stock prices:",get_live_data())
 
 #2) --- SIMULATION OF STOCK PRICES FOR THE GAME ---
 
@@ -52,10 +52,11 @@ def simulate_stock_prices():
     """This function forecasts stock prices for the next period based on the live stock data fetched with the function get_live_data. The forecast is
     an AR(1) model (random walk). Random walk model: P_t+1 = alpha + beta*P_t + error term"""
     simulated_prices={} #local variable
+    global list_lastprices
     for names,last_price in list_lastprices.items():
         alpha=0 #drift set to 0
         beta=1 #condition for random walk models
-        errorterm=np.random.normal(0,1) #white noise normally distributed with mean==0 and standard deviation==1
+        errorterm=np.random.normal(0,5) #white noise normally distributed with mean==0 and standard deviation==5
         price_forecast=alpha+beta*last_price+errorterm
         simulated_prices[names]=price_forecast
 
@@ -68,6 +69,34 @@ def simulate_stock_prices():
     return simulated_prices   
 
 
+def prepare_data(prices_list):
+    """This function transforms the live stock prices and forecasted prices in an more readible way
+    1st Step: the functions get_live_data() or simulate_stock_prices() should be called first
+    
+    Arguments: either 'list_lastprices' or 'livestock_prices'
+    
+    Return: stocks and prices rounded to two decimals """
+    cleandata={}
+
+    for stock, price in prices_list.items():
+        cleandata[stock]=round(float(price),2)
+
+    return cleandata
 
 
+
+# --- FOR lEO AND TIM: FUNCTIONS TO RUN TO START THE GAME ---
+
+#first round
+get_live_data()
+#next rounds
+simulate_stock_prices()
+simulate_stock_prices()
+simulate_stock_prices()
+
+#to display the stock prices (either list_lastprices as argument or livestock_prices if it is the first round)
+#returns a dictionary
+prices_game=prepare_data(list_lastprices)
+print(prices_game)
+print("history:",stockprices_history)
 
