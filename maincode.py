@@ -1,23 +1,26 @@
 #! C:\Users\dorin\OneDrive\Documents\Université\HSG\SA2024\XCampHSG\Group project\PythonprojectHSG\venvtradinggame\Scripts\python.exe
 
-# 1) --- FETCHING LIVE STOCK PRICES ---
-
-# the module yfinance is necessary to fetch live stock prices from yahoo finance API
-import yfinance as yf 
+import yfinance as yf # the module yfinance is necessary to fetch live stock prices from yahoo finance API
 import numpy as np
 import pandas as pd
-
+import matplotlib.pyplot as plt
 
 # define the stocks traded in the game
 stocks={"Nvidia":"NVDA","Meta":"META","Microsoft":"MSFT","Alphabet":"GOOGL","AMD":"AMD"}
-print(f"the stocks being traded are:{list(stocks.keys())}") #converted into a list for a better output
+
+
+#0) global variables
 
 livestock_prices={}
 stockprices_history=pd.DataFrame(columns=["name","price"]) #store all the stock prices (inclusive forecasts) in a dataframe as an history
+list_lastprices=livestock_prices #for the 1st period, last prices = live prices. This variable is updated each period with the function "simulate_stock_prices"
+period=0
+
+#1) FUNCTIONS DEFINITION
 
 
 def get_live_data():
-    """ Fetch live stock prices from Yahoo finance API and store the prices in a dictionary""" 
+    """Fetch live stock prices from Yahoo finance API and store the prices in a dictionary""" 
     #global variables modified whithin the function
     global livestock_prices
     global stockprices_history
@@ -30,8 +33,11 @@ def get_live_data():
             price=stock.history(period="1d").tail(1)["Close"].iloc[0]
             #corresponding prices added to the prices dictionary
             livestock_prices[names]=price
+        #in case fetching the data from yfinance doesn't work, random prices are used to continue the game
         except Exception as e:
             print(f"Error while fetching data for {names}:{symbol}. Error type = {e}")
+            print("Using mock data instead.")
+            livestock_prices[names] = np.random.uniform(100, 500)
 
     #update the history with the live prices
     for names, prices in livestock_prices.items():
@@ -41,18 +47,13 @@ def get_live_data():
     return livestock_prices
 
 
-#print("Here are the current stock prices:",get_live_data())
-
-#2) --- SIMULATION OF STOCK PRICES FOR THE GAME ---
-
-
-list_lastprices=livestock_prices #for the 1st period, last prices = live prices. This variable is updated each period with the function "simulate_stock_prices"
-
 def simulate_stock_prices():
     """This function forecasts stock prices for the next period based on the live stock data fetched with the function get_live_data. The forecast is
     an AR(1) model (random walk). Random walk model: P_t+1 = alpha + beta*P_t + error term"""
     simulated_prices={} #local variable
     global list_lastprices
+    global period
+    period += 1
     for names,last_price in list_lastprices.items():
         alpha=0 #drift set to 0
         beta=1 #condition for random walk models
@@ -84,97 +85,93 @@ def prepare_data(prices_list):
     return cleandata
 
 
-
-# --- FOR lEO AND TIM: FUNCTIONS TO RUN TO START THE GAME ---
-
-#first round
-get_live_data()
-#next rounds
-simulate_stock_prices()
-
-#to display the stock prices (either list_lastprices as argument or livestock_prices if it is the first round)
-#returns a dictionary
-prices_game=prepare_data(list_lastprices)
-print(prices_game)
-print("history:",stockprices_history)
-
-#### VISUALISATION PART:
-
-import matplotlib.pyplot as plt
-
-# Display Stock Prices
-def display_stock_prices(prices, period):
-    """
-    Display stock prices in a readable format.
+#after using the get live data function, and the prepare data function
+def start_game(stock_data):
+    """ This function defines the portfolio allocations of the user.
     
-    Args:
-        prices (dict): Dictionary of stock prices.
-        period (int): Current period.
-    """
-    print(f"\n--- Stock Prices for Period {period} ---")
+    Arguments: dictionary with stock being traded (names and prices)
+    
+    Return: a list with the allocations to each stock (exposure short/long)"""
+
+    print("Allocate your portfolio. You can use leverage up to 5x or short stocks.")
+    print(f"Available stocks: {list(stock_data.keys())}")
+    print("Instructions:\nYou can allocate a total of up to 500% across all stocks, using leverage up to 5x. Negative values represent short selling.\nThe sum of all allocations must be up to 500% (you can use leverage up to 5x)")
+    user_allocation = []
+    while sum(user_allocation) < 500:
+        try:
+            for stock in stock_data.keys():
+                allocation = float(input(f"Enter % allocation to {stock} (can be negative for short positions): "))
+                user_allocation.append(allocation)
+
+            total_absolute_allocation = sum(user_allocation)
+
+            if total_absolute_allocation > 500:
+                print(f"Total allocation exceeds allowed leverage (500%). Please try again.")
+                user_allocation = user_allocation[:-1] #remove the last element so the user can enter it again
+        except ValueError as e:
+            print(f"Invalid input: {e}. Please enter numeric values only.")
+            user_allocation = user_allocation[:-1] #remove the last element so the user can enter it again
+
+    print("Your portfolio allocation:")
+    for stock, allocation in zip(stock_data.keys(), user_allocation):
+        print(f"{stock}: {allocation}%")
+    return user_allocation
+
+
+def calculate_returns(allocation, stock_data, start_prices, end_prices):
+    start_prices = np.array([start_prices[stock] for stock in stock_data.keys()])
+    end_prices = np.array([end_prices[stock] for stock in stock_data.keys()])
+
+    return np.sum(np.array(allocation) * (end_prices / start_prices - 1))
+
+#after using the simulate price function
+def display_stock_prices(prices):
+    """ This function displays the stock prices for a specific period
+    Arguments: a dictionary with stocks and their prices, the current period as integer"""
+    global period
+    print(f"--- Stock Prices for Period {period} ---")
     for stock, price in prices.items():
         print(f"{stock}: ${price:.2f}")
-
-
-# Track and Display Portfolio Performance
-def calculate_portfolio_value(prices, allocations):
-    """
-    Calculate the portfolio value based on current stock prices and allocations.
     
-    Args:
-        prices (dict): Dictionary of stock prices.
-        allocations (dict): Dictionary of allocations as percentages (0-100%).
     
-    Returns:
-        float: Total portfolio value.
-    """
-    total_value = 0
-    for stock, allocation in allocations.items():
-        total_value += prices.get(stock, 0) * (allocation / 100)
-    return total_value
 
-
+#at the end, to close the game
 def display_results(user_value, ai_values):
-    """
-    Display the final results of the game.
-    
-    Args:
-        user_value (float): Final portfolio value of the user.
-        ai_values (list): Final portfolio values of all AI participants.
-    """
-    print("\n--- Final Results ---")
-    
-    # Include the user in rankings
+    """ This function displays the results obtained by the human user and the bots he is playing against
+    Arguments: user overall performance, list of bots performances """
+
+    print("--- Final Results ---")
     all_values = ai_values + [user_value]
     rankings = sorted(all_values, reverse=True)
     user_rank = rankings.index(user_value) + 1
 
     print(f"Your Final Portfolio Value: ${user_value:.2f}")
     print(f"Your Ranking: {user_rank}/{len(all_values)}")
-    
-    # Best and worst AI portfolio values
     best_ai = max(ai_values)
     worst_ai = min(ai_values)
     print(f"Best AI Portfolio Value: ${best_ai:.2f}")
     print(f"Worst AI Portfolio Value: ${worst_ai:.2f}")
-    
-    # Display all AI portfolio values
-    print("\nAI Portfolio Values:")
+    print("AI Portfolio Values:")
     for i, value in enumerate(ai_values, start=1):
         print(f"AI {i}: ${value:.2f}")
-
-
-# Visualization
-def visualize_performance(history, user_values, ai_values, period_range):
-    """
-    Visualize stock price evolution and portfolio performance.
     
-    Args:
-        history (pd.DataFrame): Stock price history DataFrame.
-        user_values (list): List of user's portfolio values over time.
-        ai_values (list of lists): List of each AI's portfolio values over time.
-        period_range (list): List of periods.
-    """
+    #the game ends, the user is asked to whether to start again or quit
+    play_again = input("Would you like to play again? If so, type 'yes'")
+    if play_again.lower() == "yes":
+        trading_game()
+    else:
+        print("Thank you for playing!")
+
+# last function to call
+
+def visualize_performance(history, user_values, ai_values, period_range):
+    """ Visualize stock price evolution and portfolio performance.
+    Arguments:
+    history (pd.DataFrame): Stock price history DataFrame.
+    user_values (list): List of user's portfolio values over time.
+    ai_values (list of lists): List of each AI's portfolio values over time.
+    period_range (list): List of periods."""
+
     # Stock price evolution
     plt.figure(figsize=(10, 6))
     for stock in history['name'].unique():
@@ -196,3 +193,103 @@ def visualize_performance(history, user_values, ai_values, period_range):
     plt.ylabel('Portfolio Value')
     plt.legend()
     plt.show()
+
+
+
+# --- FOR lEO AND TIM: FUNCTIONS TO RUN TO START THE GAME ---
+
+#first round
+get_live_data()
+#next rounds
+simulate_stock_prices()
+
+#to display the stock prices (either list_lastprices as argument or livestock_prices if it is the first round)
+#returns a dictionary
+prices_game=prepare_data(list_lastprices)
+print(prices_game)
+print("history:",stockprices_history)
+
+
+
+
+
+# --- Main Game ---
+
+
+def trading_game():
+    """ When called, this function launches the game. The game is integrated into a function to allow for playing many times."""
+
+    gamerunning= "" 
+    print("Welcome to the Trading Game!")
+    print("""
+    Rules:
+    1. Allocate your portfolio among 5 stocks with leverage up to 5x.
+    2. You can use leverage to allocate up to 500% across all stocks, or short stocks by using negative allocations.
+    3. Stock prices are fetched live for the first round. Subsequent rounds simulate prices.
+    4. Your goal is to maximize returns compared to 9 AI players.""")
+        
+    while gamerunning != "go":
+        gamerunning=input("write 'go' when you're ready to start!")
+       
+        
+    global stocks
+    print(f"The stocks being traded are: {list(stocks.keys())}") #converted into a list for a more readible output
+
+    # User inputs the number of periods for the game
+    num_periods=0
+    while num_periods<=0:
+        try:
+            num_periods = int(input("Enter the number of rounds (at least 2) you'd like the game to run (e.g., 5, 10): "))
+            if num_periods <= 1:
+                print("Please enter a positive number greater than 1.")
+            else:
+                break
+        except ValueError:
+            print("Invalid input. Please enter a valid number.")
+
+    # Now live prices are collected from Yahoo finance
+    live_prices = get_live_data()
+
+    # Show stock prices before allocation
+    display_stock_prices(live_prices)
+#here --- continue
+    user_allocation = start_game(live_prices)
+
+    user_return = 0
+    ai_allocations = [
+        np.random.dirichlet(np.ones(len(live_prices))) * 100 for _ in range(9)
+    ]
+    ai_returns = [0] * 9
+    user_values = []
+    ai_values = [[] for _ in range(9)]
+    period_range = []
+
+    for period in range(1, num_periods + 1):
+        print(f"\n--- Period {period} ---")
+        period_range.append(period)
+
+        if period == 0:
+            stock_data = live_prices
+        else:
+            stock_data = simulate_stock_prices()
+
+        stock_data_cleaned = prepare_data(stock_data)
+        display_stock_prices(stock_data_cleaned, period)
+
+        if period > 1:
+            user_return += calculate_returns(user_allocation, stock_data_cleaned, previous_prices, stock_data_cleaned)
+
+        user_values.append(user_return)
+        for i, ai_allocation in enumerate(ai_allocations):
+            if period > 1:
+                ai_returns[i] += calculate_returns(ai_allocation, stock_data_cleaned, previous_prices, stock_data_cleaned)
+            ai_values[i].append(ai_returns[i])
+
+        previous_prices = stock_data_cleaned
+        input("\nPress Enter to continue to the next period...")
+
+    display_results(user_values[-1], ai_returns)
+    visualize_performance(stockprices_history, user_values, ai_values, period_range)
+
+if __name__ == "__main__":
+    trading_game()

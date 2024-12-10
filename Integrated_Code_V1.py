@@ -22,6 +22,7 @@ def get_live_data():
             stock = yf.Ticker(symbol)
             price = stock.history(period="1d").tail(1)["Close"].iloc[0]
             livestock_prices[name] = price
+        #in case fetching the data from yfinance doesn't work, random prices are used to continue the game
         except Exception as e:
             print(f"Error while fetching data for {name} ({symbol}): {e}")
             print("Using mock data instead.")
