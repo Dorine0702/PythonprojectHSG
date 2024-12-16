@@ -155,32 +155,37 @@ def prepare_data(prices_list):
 
 #after using the get live data function, and the prepare data function
 def start_allocation(stock_data):
-    """ This function defines the portfolio allocations of the user.
+    """This function defines the portfolio allocations of the user.
     
-    Arguments: dictionary with stock being traded (names and prices)
+    Arguments:
+        stock_data (dict): Dictionary with stock names and prices.
     
-    Return: a list with the allocations to each stock (exposure short/long)"""
-
+    Returns:
+        list: A list with the allocations to each stock (exposure short/long).
+    """
     print("Allocate your portfolio. You can use leverage up to 5x or short stocks.")
     print(f"Available stocks: {list(stock_data.keys())}")
-    print("Instructions:\nYou can allocate a total of up to 500% across all stocks, using leverage up to 5x. Negative values represent short selling.\nThe sum of all allocations must be up to 500% (you can use leverage up to 5x)")
+    print("Instructions:\nYou can allocate a total of up to 500% across all stocks, using leverage up to 5x. "
+          "Negative values represent short selling.\nThe sum of all allocations must be up to 500% (you can use leverage up to 5x).")
+
     user_allocation = []
-    while sum(user_allocation) < 500:
-        try:
-            for stock in stock_data.keys():
+    total_allocation = 0  # Track cumulative allocation
+    
+    # Loop through all stocks to collect allocations
+    for stock in stock_data.keys():
+        while True:  # Ensure valid input for each stock
+            try:
                 allocation = float(input(f"Enter % allocation to {stock} (can be negative for short positions): "))
-                user_allocation.append(allocation)
+                if total_allocation + abs(allocation) > 500:  # Check leverage constraint
+                    print("Total allocation exceeds allowed leverage (500%). Please enter a smaller value.")
+                else:
+                    user_allocation.append(allocation)
+                    total_allocation += abs(allocation)  # Update total absolute allocation
+                    break
+            except ValueError:
+                print("Invalid input. Please enter numeric values only.")
 
-            total_absolute_allocation = sum(user_allocation)
-
-            if total_absolute_allocation > 500:
-                print(f"Total allocation exceeds allowed leverage (500%). Please try again.")
-                user_allocation = user_allocation[:-1] #remove the last element so the user can enter it again
-        except ValueError as e:
-            print(f"Invalid input: {e}. Please enter numeric values only.")
-            user_allocation = user_allocation[:-1] #remove the last element so the user can enter it again
-
-    print("Your portfolio allocation:")
+    print("\nYour portfolio allocation:")
     for stock, allocation in zip(stock_data.keys(), user_allocation):
         print(f"{stock}: {allocation}%")
     return user_allocation
@@ -233,21 +238,25 @@ def display_results(user_value, ai_values):
 # last function to call
 
 def visualize_performance(history, user_values, ai_values, period_range):
-    """ Visualize stock price evolution and portfolio performance.
+    """ Visualize stock returns evolution and portfolio performance.
     Arguments:
     history (pd.DataFrame): Stock price history DataFrame.
     user_values (list): List of user's portfolio values over time.
     ai_values (list of lists): List of each AI's portfolio values over time.
-    period_range (list): List of periods."""
+    period_range (list): List of periods. """
 
-    # Stock price evolution
+    # Calculate returns for stock prices
+    history['return'] = history.groupby('name')['price'].pct_change() * 100
+
+    # Plot stock returns evolution
     plt.figure(figsize=(10, 6))
     for stock in history['name'].unique():
         stock_data = history[history['name'] == stock]
-        plt.plot(stock_data.index, stock_data['price'], label=stock)
-    plt.title('Stock Price Evolution')
+        plt.plot(stock_data.index, stock_data['return'], label=stock)
+    plt.title('Stock Returns Evolution')
     plt.xlabel('Periods')
-    plt.ylabel('Price')
+    plt.ylabel('Returns (%)')
+    plt.axhline(0, color='gray', linestyle='--', linewidth=0.8)  # Add a baseline for 0% return
     plt.legend()
     plt.show()
 
