@@ -4,13 +4,12 @@ import yfinance as yf # the module yfinance is necessary to fetch live stock pri
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
-# define the stocks traded in the game
-stocks={"Nvidia":"NVDA","Meta":"META","Microsoft":"MSFT","Alphabet":"GOOGL","AMD":"AMD"}
+import random
 
 
-#0) global variables
+#0) GLOBAL VARIABLES DEFINITION
 
+stocks={"Nvidia":"NVDA","Meta":"META","Microsoft":"MSFT","Alphabet":"GOOGL","AMD":"AMD"}# define the stocks traded in the game
 livestock_prices={}
 stockprices_history=pd.DataFrame(columns=["name","price"]) #store all the stock prices (inclusive forecasts) in a dataframe as an history
 list_lastprices=livestock_prices #for the 1st period, last prices = live prices. This variable is updated each period with the function "simulate_stock_prices"
@@ -20,7 +19,9 @@ period=0
 
 
 def get_live_data():
-    """Fetch live stock prices from Yahoo finance API and store the prices in a dictionary""" 
+    """Fetch live stock prices from Yahoo finance API and store the prices in a dictionary
+    
+    return: live stock prices from the last trading day""" 
     #global variables modified whithin the function
     global livestock_prices
     global stockprices_history
@@ -57,6 +58,28 @@ def simulate_stock_prices():
     for names,last_price in list_lastprices.items():
         alpha=0 #drift set to 0
         beta=1 #condition for random walk models
+        errorterm=np.random.normal(0,5) #white noise normally distributed with mean==0 and standard deviation==5 (higher stdev to allow for higher volatility in the game)
+        price_forecast=alpha+beta*last_price+errorterm
+        simulated_prices[names]=price_forecast
+
+    #update the last prices dictionary for when the function is called next period
+    list_lastprices=simulated_prices
+
+    #update the stock prices history
+    for names, prices in list_lastprices.items():
+         stockprices_history.loc[len(stockprices_history)]={"name":names,"price":prices} 
+    return simulated_prices   
+
+def simulate_stock_prices_shock():
+    """This function forecasts stock prices for the next period based on the live stock data fetched with the function get_live_data. a
+     stock price crash is simulated. """
+    simulated_prices={} #local variable
+    global list_lastprices
+    global period
+    period += 1
+    for names,last_price in list_lastprices.items():
+        alpha=0 #drift set to 0
+        beta=-10 #negative beta coefficient to push the prices
         errorterm=np.random.normal(0,5) #white noise normally distributed with mean==0 and standard deviation==5
         price_forecast=alpha+beta*last_price+errorterm
         simulated_prices[names]=price_forecast
@@ -68,6 +91,51 @@ def simulate_stock_prices():
     for names, prices in list_lastprices.items():
          stockprices_history.loc[len(stockprices_history)]={"name":names,"price":prices} 
     return simulated_prices   
+
+
+def simulate_stock_prices_goodstate():
+    """This function forecasts stock prices for the next period based on the live stock data fetched with the function get_live_data. 
+    An unexpected increase in the stock prices is simulated"""
+    simulated_prices={} #local variable
+    global list_lastprices
+    global period
+    period += 1
+    for names,last_price in list_lastprices.items():
+        alpha=0 #drift set to 0
+        beta=5 #higher positive beta to force the prices up
+        errorterm=np.random.normal(0,5) #white noise normally distributed with mean==0 and standard deviation==5
+        price_forecast=alpha+beta*last_price+errorterm
+        simulated_prices[names]=price_forecast
+
+    #update the last prices dictionary for when the function is called next period
+    list_lastprices=simulated_prices
+
+    #update the stock prices history
+    for names, prices in list_lastprices.items():
+         stockprices_history.loc[len(stockprices_history)]={"name":names,"price":prices} 
+    return simulated_prices   
+
+
+def launch_prices_forecast():
+    """This function randomly determines which function will be used to forecast the next stock prices (random walk, shock or goodstate)
+    return: simulated_prices through the function being called"""
+
+    forecast=random.choice([simulate_stock_prices,simulate_stock_prices_goodstate,simulate_stock_prices_shock]) #one of the 3 functions is chosen
+    simulated_prices=forecast() #chosen function is called and forecast of prices is made
+    
+    #message to the player
+    if forecast==simulate_stock_prices:
+        print("no specific news about the stock markets")
+    elif forecast==simulate_stock_prices_goodstate:
+        print("News: overall good state of the economy and positive prospects regarding the market returns")
+    elif forecast==simulate_stock_prices_shock:
+        print("News: unexpected shock will disturb the actual trends. Investors should be cautious.")
+
+    return simulated_prices
+
+
+
+
 
 
 def prepare_data(prices_list):
@@ -86,7 +154,7 @@ def prepare_data(prices_list):
 
 
 #after using the get live data function, and the prepare data function
-def start_game(stock_data):
+def start_allocation(stock_data):
     """ This function defines the portfolio allocations of the user.
     
     Arguments: dictionary with stock being traded (names and prices)
@@ -253,7 +321,7 @@ def trading_game():
     # Show stock prices before allocation
     display_stock_prices(live_prices)
 #here --- continue
-    user_allocation = start_game(live_prices)
+    user_allocation = start_allocation(live_prices)
 
     user_return = 0
     ai_allocations = [
@@ -271,7 +339,7 @@ def trading_game():
         if period == 0:
             stock_data = live_prices
         else:
-            stock_data = simulate_stock_prices()
+            stock_data = launch_prices_forecast()
 
         stock_data_cleaned = prepare_data(stock_data)
         display_stock_prices(stock_data_cleaned, period)
