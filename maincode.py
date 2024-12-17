@@ -324,49 +324,65 @@ def trading_game():
         except ValueError:
             print("Invalid input. Please enter a valid number.")
 
-    # Now live prices are collected from Yahoo finance
-    live_prices = get_live_data()
+    live_prices = get_live_data()  # Fetch stock prices for the first round
+    display_stock_prices(live_prices)  # Display live prices to the user
+    user_allocation = start_allocation(live_prices)  # User inputs portfolio allocation percentages
 
-    # Show stock prices before allocation
-    display_stock_prices(live_prices)
-#here --- continue
-    user_allocation = start_allocation(live_prices)
+    # Variables' initialisation
+    user_portfolio_value = 100  # user
+    ai_portfolio_values = [100] * 9  # nine AI players
 
-    user_return = 0
+    # AI random portfolio allocations
     ai_allocations = [
         np.random.dirichlet(np.ones(len(live_prices))) * 100 for _ in range(9)
-    ]
-    ai_returns = [0] * 9
-    user_values = []
-    ai_values = [[] for _ in range(9)]
-    period_range = []
+    ]  # generate random AI portfolio allocations summing to 100%
 
-    for period in range(1, num_periods + 1):
+    # initialize lists for tracking portfolio values over time
+    user_values = [user_portfolio_value]
+    ai_values = [[value] for value in ai_portfolio_values]
+    period_range = [0]  # initialize periods for visualization
+
+    previous_prices = live_prices  # set starting prices for the first period
+
+    # Game Loop (for each of the periods)
+    for period in range(1, num_periods + 1):  # loop through all periods
         print(f"\n--- Period {period} ---")
-        period_range.append(period)
+        period_range.append(period)  # add current period to the list for tracking
 
-        if period == 0:
-            stock_data = live_prices
-        else:
-            stock_data = launch_prices_forecast()
+        # Forecast stock prices for the current period
+        stock_data = launch_prices_forecast()  # randomly simulate stock prices for this round
+        stock_data_cleaned = prepare_data(stock_data)  # clean and format simulated prices
+        display_stock_prices(stock_data_cleaned)  # display stock prices to the user
 
-        stock_data_cleaned = prepare_data(stock_data)
-        display_stock_prices(stock_data_cleaned, period)
+        # User's portfolio update
+        user_return = calculate_returns(
+            user_allocation, stock_data_cleaned, previous_prices, stock_data_cleaned
+        )  # calculate user return
+        user_portfolio_value *= (1 + user_return)
+        user_values.append(user_portfolio_value)  # append the updated value to the list
 
-        if period > 1:
-            user_return += calculate_returns(user_allocation, stock_data_cleaned, previous_prices, stock_data_cleaned)
-
-        user_values.append(user_return)
+        # AI's portfolio update
         for i, ai_allocation in enumerate(ai_allocations):
-            if period > 1:
-                ai_returns[i] += calculate_returns(ai_allocation, stock_data_cleaned, previous_prices, stock_data_cleaned)
-            ai_values[i].append(ai_returns[i])
+            ai_return = calculate_returns(
+                ai_allocation, stock_data_cleaned, previous_prices, stock_data_cleaned
+            )  # Calculate AI return
+            ai_portfolio_values[i] *= (1 + ai_return)  # update AI portfolio value
+            ai_values[i].append(ai_portfolio_values[i])  # append updated value
 
+        # Update previous prices for the next period
         previous_prices = stock_data_cleaned
-        input("\nPress Enter to continue to the next period...")
 
-    display_results(user_values[-1], ai_returns)
-    visualize_performance(stockprices_history, user_values, ai_values, period_range)
+        # Diplay portfolio
+        print(f"\nYour Portfolio Value: ${user_portfolio_value:.2f}")  # show user portfolio value
+        for i, ai_value in enumerate(ai_portfolio_values):
+            print(f"AI {i + 1} Portfolio Value: ${ai_value:.2f}")  # show AI portfolio values
 
+        # pause to allow the user to review before continuing
+        input("Press Enter to continue to the next period...")
+
+    # Display of the results
+    display_results(user_values[-1], [ai_values[i][-1] for i in range(9)])  # show results for user and AI players
+    visualize_performance(stockprices_history, user_values, ai_values, period_range)  # generate performance graphs
+    
 if __name__ == "__main__":
     trading_game()
