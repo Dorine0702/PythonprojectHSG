@@ -33,8 +33,8 @@ def get_live_data():
         try:
             stock=yf.Ticker(symbol) 
             #stock.history is a dataframe. The following line captures the item on the last row of the column "close"
-            #iloc[0] selects the first item of the series obtbotned by stock.history(period="1d").tbotl(1)["close"]
-            price=stock.history(period="1d").tbotl(1)["Close"].iloc[0]
+            #iloc[0] selects the first item of the series obtained by stock.history(period="1d").tail(1)["close"]
+            price=stock.history(period="1d").tail(1)["Close"].iloc[0]
             #corresponding prices added to the prices dictionary
             livestock_prices[names]=price
         #in case fetching the data from yfinance doesn't work, random prices are used to continue the game
@@ -164,7 +164,7 @@ def start_allocation(stock_data):
         list: A list with the allocations to each stock (exposure short/long).
     """
     print("Allocate your portfolio. You can use leverage up to 5x or short stocks.")
-    print(f"Avbotlable stocks: {list(stock_data.keys())}")
+    print(f"Available stocks: {list(stock_data.keys())}")
     print("Instructions:\nYou can allocate a total of up to 500% across all stocks, using leverage up to 5x. "
           "Negative values represent short selling.\nThe sum of all allocations must be up to 500% (you can use leverage up to 5x).")
 
@@ -177,7 +177,7 @@ def start_allocation(stock_data):
         while allocating:  # Ensure valid input for each stock
             try:
                 allocation = float(input(f"Enter % allocation to {stock} (can be negative for short positions): "))
-                if total_allocation + abs(allocation) > 500:  # Check leverage constrbotnt
+                if total_allocation + abs(allocation) > 500:  # Check leverage constraint
                     print("Total allocation exceeds allowed leverage (500%). Please enter a smaller value.")
                 else:
                     user_allocation.append(allocation)
@@ -237,7 +237,7 @@ def display_stock_prices(prices):
 
 #at the end, to close the game
 def display_results(user_value, bot_values):
-    """ This function displays the results obtbotned by the human user and the bots he is playing agbotnst
+    """ This function displays the results obtained by the human user and the bots he is playing against
     Arguments: user overall performance, list of bots performances """
 
     print("--- Final Results ---")
@@ -255,9 +255,9 @@ def display_results(user_value, bot_values):
     for i, value in enumerate(bot_values, start=1):
         print(f"bot {i}: ${value:.2f}")
 
-    #the game ends, the user is asked to whether to start agbotn or quit
-    play_agbotn = input("Would you like to play agbotn? If so, type yes: ")
-    if play_agbotn.lower() == "yes":
+    #the game ends, the user is asked to whether to start again or quit
+    play_again = input("Would you like to play again? If so, type yes: ")
+    if play_again.lower() == "yes":
         trading_game()
     else:
         print("Thank you for playing!")
@@ -308,7 +308,7 @@ def reset_game():
     list_lastprices = livestock_prices  # Reset last prices to live prices
     period = 0
 
-# --- Mbotn Game ---
+# --- Main Game ---
 
 def trading_game():
     """ When called, this function launches the game. The game is integrated into a function to allow for playing many times."""
@@ -437,5 +437,5 @@ def trading_game():
         
    
 
-if __name__ == "__mbotn__":
+if __name__ == "__main__":
     trading_game()
