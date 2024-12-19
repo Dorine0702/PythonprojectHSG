@@ -15,7 +15,7 @@ stockprices_history=pd.DataFrame(columns=["name","price"]) #store all the stock 
 list_lastprices=livestock_prices #for the 1st period, last prices = live prices. This variable is updated each period with the function "simulate_stock_prices"
 period=0 #number of periods played
 user_values=[] #initialisation of the user stock returns
-ai_values=[] #initialisation of the bot (opponent) stock returns
+bot_values=[] #initialisation of the bot (opponent) stock returns
 period_range=[] #initialisation of the period range for the graph plotted at the end
 
 #1) FUNCTIONS DEFINITION
@@ -33,8 +33,8 @@ def get_live_data():
         try:
             stock=yf.Ticker(symbol) 
             #stock.history is a dataframe. The following line captures the item on the last row of the column "close"
-            #iloc[0] selects the first item of the series obtained by stock.history(period="1d").tail(1)["close"]
-            price=stock.history(period="1d").tail(1)["Close"].iloc[0]
+            #iloc[0] selects the first item of the series obtbotned by stock.history(period="1d").tbotl(1)["close"]
+            price=stock.history(period="1d").tbotl(1)["Close"].iloc[0]
             #corresponding prices added to the prices dictionary
             livestock_prices[names]=price
         #in case fetching the data from yfinance doesn't work, random prices are used to continue the game
@@ -138,9 +138,6 @@ def launch_prices_forecast():
 
 
 
-
-
-
 def prepare_data(prices_list):
     """This function transforms the live stock prices and forecasted prices in an more readible way
     1st Step: the functions get_live_data() or simulate_stock_prices() should be called first
@@ -167,7 +164,7 @@ def start_allocation(stock_data):
         list: A list with the allocations to each stock (exposure short/long).
     """
     print("Allocate your portfolio. You can use leverage up to 5x or short stocks.")
-    print(f"Available stocks: {list(stock_data.keys())}")
+    print(f"Avbotlable stocks: {list(stock_data.keys())}")
     print("Instructions:\nYou can allocate a total of up to 500% across all stocks, using leverage up to 5x. "
           "Negative values represent short selling.\nThe sum of all allocations must be up to 500% (you can use leverage up to 5x).")
 
@@ -180,7 +177,7 @@ def start_allocation(stock_data):
         while allocating:  # Ensure valid input for each stock
             try:
                 allocation = float(input(f"Enter % allocation to {stock} (can be negative for short positions): "))
-                if total_allocation + abs(allocation) > 500:  # Check leverage constraint
+                if total_allocation + abs(allocation) > 500:  # Check leverage constrbotnt
                     print("Total allocation exceeds allowed leverage (500%). Please enter a smaller value.")
                 else:
                     user_allocation.append(allocation)
@@ -239,41 +236,40 @@ def display_stock_prices(prices):
 
 
 #at the end, to close the game
-def display_results(user_value, ai_values):
-    """ This function displays the results obtained by the human user and the bots he is playing against
+def display_results(user_value, bot_values):
+    """ This function displays the results obtbotned by the human user and the bots he is playing agbotnst
     Arguments: user overall performance, list of bots performances """
 
     print("--- Final Results ---")
-    all_values = ai_values + [user_value]
+    all_values = bot_values + [user_value]
     rankings = sorted(all_values, reverse=True)
     user_rank = rankings.index(user_value) + 1
 
     print(f"Your Final Portfolio Value: ${user_value:.2f}")
     print(f"Your Ranking: {user_rank}/{len(all_values)}")
-    best_ai = max(ai_values)
-    worst_ai = min(ai_values)
-    print(f"Best AI Portfolio Value: ${best_ai:.2f}")
-    print(f"Worst AI Portfolio Value: ${worst_ai:.2f}")
-    print("AI Portfolio Values:")
-    for i, value in enumerate(ai_values, start=1):
-        print(f"AI {i}: ${value:.2f}")
+    best_bot = max(bot_values)
+    worst_bot = min(bot_values)
+    print(f"Best bot Portfolio Value: ${best_bot:.2f}")
+    print(f"Worst bot Portfolio Value: ${worst_bot:.2f}")
+    print("bot Portfolio Values:")
+    for i, value in enumerate(bot_values, start=1):
+        print(f"bot {i}: ${value:.2f}")
 
-    #the game ends, the user is asked to whether to start again or quit
-    play_again = input("Would you like to play again? If so, type yes: ")
-    if play_again.lower() == "yes":
+    #the game ends, the user is asked to whether to start agbotn or quit
+    play_agbotn = input("Would you like to play agbotn? If so, type yes: ")
+    if play_agbotn.lower() == "yes":
         trading_game()
     else:
         print("Thank you for playing!")
    
 
-# last function to call
 
-def visualize_performance(history, user_values, ai_values, period_range):
+def visualize_performance(history, user_values, bot_values, period_range):
     """ Visualize stock returns evolution and portfolio performance.
     Arguments:
     history (pd.DataFrame): Stock price history DataFrame.
     user_values (list): List of user's portfolio values over time.
-    ai_values (list of lists): List of each AI's portfolio values over time.
+    bot_values (list of lists): List of each bot's portfolio values over time.
     period_range (list): List of periods. """
 
     # Calculate returns for stock prices
@@ -294,8 +290,8 @@ def visualize_performance(history, user_values, ai_values, period_range):
     # Portfolio performance
     plt.figure(figsize=(10, 6))
     plt.plot(period_range, user_values, label='User', linewidth=2)
-    for i, ai_value in enumerate(ai_values):
-        plt.plot(period_range, ai_value, label=f'AI {i + 1}', linestyle='--')
+    for i, bot_value in enumerate(bot_values):
+        plt.plot(period_range, bot_value, label=f'bot {i + 1}', linestyle='--')
     plt.title('Portfolio Performance')
     plt.xlabel('Periods')
     plt.ylabel('Portfolio Value')
@@ -312,7 +308,7 @@ def reset_game():
     list_lastprices = livestock_prices  # Reset last prices to live prices
     period = 0
 
-# --- Main Game ---
+# --- Mbotn Game ---
 
 def trading_game():
     """ When called, this function launches the game. The game is integrated into a function to allow for playing many times."""
@@ -325,7 +321,7 @@ def trading_game():
     1. Allocate your portfolio among 5 stocks with leverage up to 5x.
     2. You can use leverage to allocate up to 500% across all stocks, or short stocks by using negative allocations.
     3. Stock prices are fetched live for the first round. Subsequent rounds simulate prices.
-    4. Your goal is to maximize returns compared to 9 AI players.""")
+    4. Your goal is to maximize returns compared to 9 bot players.""")
 
     gamerunning = ""
     while gamerunning not in ["go", "no"]:
@@ -338,7 +334,7 @@ def trading_game():
 
     global stocks
     global user_values
-    global ai_values
+    global bot_values
     global period_range
     print(f"The stocks being traded are: {list(stocks.keys())}")  # List stock names
 
@@ -360,16 +356,16 @@ def trading_game():
 
     # ** Initialize Portfolio Values **
     user_portfolio_value = 100  # Initial user portfolio value
-    ai_portfolio_values = [100] * 9  # Initial portfolio values for nine AI players
+    bot_portfolio_values = [100] * 9  # Initial portfolio values for nine bot players
 
-    # AI random portfolio allocations
-    ai_allocations = [
+    # bot random portfolio allocations
+    bot_allocations = [
         np.random.dirichlet(np.ones(len(live_prices))) * 100 for _ in range(9)
-    ]  # Generate random AI portfolio allocations summing to 100%
+    ]  # Generate random bot portfolio allocations summing to 100%
 
     # Initialize lists for tracking portfolio values over time
     user_values = [user_portfolio_value]  # Track user portfolio values
-    ai_values = [[value] for value in ai_portfolio_values]  # Track AI portfolio values
+    bot_values = [[value] for value in bot_portfolio_values]  # Track bot portfolio values
     period_range = [1]  # Periods start at 1
 
     previous_prices = live_prices  # Set starting prices for the first period
@@ -378,8 +374,8 @@ def trading_game():
     print(f"\n--- Period 0 ---")
     print("Initial Portfolio Values:")
     print(f"Your Portfolio Value: ${user_portfolio_value:.2f}")
-    for i, ai_value in enumerate(ai_portfolio_values):
-        print(f"AI {i + 1} Portfolio Value: ${ai_value:.2f}")
+    for i, bot_value in enumerate(bot_portfolio_values):
+        print(f"bot {i + 1} Portfolio Value: ${bot_value:.2f}")
 
         # Game Loop (from Period 1 onwards)
     for period in range(1, num_periods + 1):  # Start loop from period 1
@@ -409,19 +405,19 @@ def trading_game():
         user_portfolio_value *= (1 + user_return)  # Update user portfolio value
         user_values.append(user_portfolio_value)  # Append updated value to track progress
 
-        # ** AI Portfolios Update **
-        for i, ai_allocation in enumerate(ai_allocations):
-            ai_return = calculate_returns(
-                ai_allocation, stock_data_cleaned, previous_prices, stock_data_cleaned
-            )  # Calculate AI return
-            ai_portfolio_values[i] *= (1 + ai_return)  # Update AI portfolio value
-            ai_values[i].append(ai_portfolio_values[i])  # Append updated value
+        # ** bot Portfolios Update **
+        for i, bot_allocation in enumerate(bot_allocations):
+            bot_return = calculate_returns(
+                bot_allocation, stock_data_cleaned, previous_prices, stock_data_cleaned
+            )  # Calculate bot return
+            bot_portfolio_values[i] *= (1 + bot_return)  # Update bot portfolio value
+            bot_values[i].append(bot_portfolio_values[i])  # Append updated value
 
         # Display updated portfolio values
         print("\n--- Current Portfolio Values ---")
         print(f"Your Portfolio Value: ${user_portfolio_value:.2f}")
-        for i, ai_value in enumerate(ai_portfolio_values):
-            print(f"AI {i + 1} Portfolio Value: ${ai_value:.2f}")
+        for i, bot_value in enumerate(bot_portfolio_values):
+            print(f"bot {i + 1} Portfolio Value: ${bot_value:.2f}")
 
         
 
@@ -430,16 +426,16 @@ def trading_game():
 
      # Final Results
     if user_portfolio_value > 1:  # If the user wasn't wiped out, finalize normally
-        display_results(user_values[-1], [ai_values[i][-1] for i in range(9)])  # Show results for user and AI players
-        visualize_performance(stockprices_history, user_values, ai_values, period_range)
+        display_results(user_values[-1], [bot_values[i][-1] for i in range(9)])  # Show results for user and bot players
+        visualize_performance(stockprices_history, user_values, bot_values, period_range)
 
     else:
         print("--- Final Results ---")
         print("You were wiped out and couldn't recover. Better luck next time!")
-        visualize_performance(stockprices_history, user_values, ai_values, period_range)
+        visualize_performance(stockprices_history, user_values, bot_values, period_range)
     exit()
         
    
 
-if __name__ == "__main__":
+if __name__ == "__mbotn__":
     trading_game()
