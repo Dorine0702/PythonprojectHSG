@@ -376,8 +376,8 @@ def trading_game():
   for i, ai_value in enumerate(ai_portfolio_values):
       print(f"AI {i + 1} Portfolio Value: ${ai_value:.2f}")
 
-    # Game Loop (from Period 2 onwards)
-  for period in range(1, num_periods + 1):  # Start loop from period 2
+    # Game Loop (from Period 1 onwards)
+  for period in range(1, num_periods + 1):  # Start loop from period 1
         print(f"\n--- Period {period} ---")
         period_range.append(period)  # Add current period to the list for tracking
 
@@ -386,11 +386,12 @@ def trading_game():
         stock_data_cleaned = prepare_data(stock_data)  # Clean and format simulated prices
         display_stock_prices(stock_data_cleaned)  # Display stock prices to the user
 
-        # ** User Portfolio Update (calculate returns first) **
+        # ** User Portfolio Update **
         user_return = calculate_returns(
             user_allocation, stock_data_cleaned, previous_prices, stock_data_cleaned
         )  # Calculate user return
         user_portfolio_value *= (1 + user_return)  # Update user portfolio value
+        user_values.append(user_portfolio_value)  # Append updated value to track progress
 
         # ** AI Portfolios Update **
         for i, ai_allocation in enumerate(ai_allocations):
@@ -406,13 +407,11 @@ def trading_game():
         for i, ai_value in enumerate(ai_portfolio_values):
             print(f"AI {i + 1} Portfolio Value: ${ai_value:.2f}")
 
-        # ** Prompt for Portfolio Adjustment (simplified) **
+        # Prompt for Portfolio Adjustment
         adjust = input("\nPress Enter to keep your current portfolio, or type 'yes' to adjust allocations: ").strip().lower()
         if adjust == "yes":
             print("Adjusting portfolio allocations.")
-            user_allocation = start_allocation(stock_data_cleaned)  # Collect new allocations
-            print("\nPress Enter to continue to the next period...")
-            input()  # Wait for user input before proceeding
+            user_allocation = start_allocation(stock_data_cleaned)
         else:
             print("Keeping the same portfolio allocations.")
 
