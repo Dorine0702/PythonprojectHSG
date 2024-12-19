@@ -422,6 +422,7 @@ def trading_game():
   # Final Results
   if user_portfolio_value > 1:  # If the user wasn't wiped out, finalize normally
       display_results(user_values[-1], [ai_values[i][-1] for i in range(9)])  # Show results for user and AI players
+      visualize_performance(stockprices_history, user_values, ai_values, period_range)
   else:
       print("--- Final Results ---")
       print("You were wiped out and couldn't recover. Better luck next time!")
