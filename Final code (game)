@@ -12,7 +12,7 @@ import random
 stocks={"Nvidia":"NVDA","Meta":"META","Microsoft":"MSFT","Alphabet":"GOOGL","AMD":"AMD"}# define the stocks traded in the game
 livestock_prices={}
 stockprices_history=pd.DataFrame(columns=["name","price"]) #store all the stock prices (inclusive forecasts) in a dataframe as an history
-list_lastprices=livestock_prices #for the 1st period, last prices = live prices. This variable is updated each period with the function "simulate_stock_prices"
+list_lastprices=livestock_prices #for the 0 period, last prices = live prices. This variable is updated each period with the stock price simulation functions
 period=0 #number of periods played
 user_values=[] #initialisation of the user stock returns
 bot_values=[] #initialisation of the bot (opponent) stock returns
@@ -82,7 +82,7 @@ def simulate_stock_prices_shock():
     period += 1
     for names,last_price in list_lastprices.items():
         alpha= -10 #drift set to -10
-        beta= 0.85 #small beta coefficient to push the prices
+        beta= 0.85 #small beta coefficient to push the prices down
         errorterm=np.random.normal(0,3) #white noise normally distributed with mean==0 and standard deviation==3
         price_forecast= max(0.01, alpha+beta*last_price+errorterm)
         simulated_prices[names]=price_forecast
@@ -104,7 +104,7 @@ def simulate_stock_prices_goodstate():
     global period
     period += 1
     for names,last_price in list_lastprices.items():
-        alpha= 10 #drift set to 0
+        alpha= 10 #drift set to 10
         beta= 1.05 #higher positive beta to force the prices up
         errorterm=np.random.normal(0,1) #white noise normally distributed with mean==0 and standard deviation==1
         price_forecast= max(0.01, alpha+beta*last_price+errorterm)
@@ -123,7 +123,7 @@ def launch_prices_forecast():
     """This function randomly determines which function will be used to forecast the next stock prices (random walk, shock or goodstate)
     return: simulated_prices through the function being called"""
 
-    forecast=random.choice([simulate_stock_prices,simulate_stock_prices_goodstate,simulate_stock_prices_shock]) #one of the 3 functions is chosen
+    forecast=random.choice([simulate_stock_prices,simulate_stock_prices_goodstate,simulate_stock_prices_shock]) #one of the 3 functions is chosen at random
     simulated_prices=forecast() #chosen function is called and forecast of prices is made
 
     #message to the player
@@ -435,7 +435,5 @@ def trading_game():
         visualize_performance(stockprices_history, user_values, bot_values, period_range)
     exit()
         
-   
-
 if __name__ == "__main__":
     trading_game()
