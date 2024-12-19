@@ -13,7 +13,10 @@ stocks={"Nvidia":"NVDA","Meta":"META","Microsoft":"MSFT","Alphabet":"GOOGL","AMD
 livestock_prices={}
 stockprices_history=pd.DataFrame(columns=["name","price"]) #store all the stock prices (inclusive forecasts) in a dataframe as an history
 list_lastprices=livestock_prices #for the 1st period, last prices = live prices. This variable is updated each period with the function "simulate_stock_prices"
-period=0
+period=0 #number of periods played
+user_values=[] #initialisation of the user stock returns
+ai_values=[] #initialisation of the bot (opponent) stock returns
+period_range=[] #initialisation of the period range for the graph plotted at the end
 
 #1) FUNCTIONS DEFINITION
 
@@ -261,7 +264,7 @@ def display_results(user_value, ai_values):
         trading_game()
     else:
         print("Thank you for playing!")
-        exit()
+   
 
 # last function to call
 
@@ -312,71 +315,74 @@ def reset_game():
 # --- Main Game ---
 
 def trading_game():
-  """ When called, this function launches the game. The game is integrated into a function to allow for playing many times."""
+    """ When called, this function launches the game. The game is integrated into a function to allow for playing many times."""
 
-  reset_game()  # Reset global variables for a fresh start
+    reset_game()  # Reset global variables for a fresh start
 
-  print("Welcome to the Trading Game!")
-  print("""
-  Rules:
-  1. Allocate your portfolio among 5 stocks with leverage up to 5x.
-  2. You can use leverage to allocate up to 500% across all stocks, or short stocks by using negative allocations.
-  3. Stock prices are fetched live for the first round. Subsequent rounds simulate prices.
-  4. Your goal is to maximize returns compared to 9 AI players.""")
+    print("Welcome to the Trading Game!")
+    print("""
+    Rules:
+    1. Allocate your portfolio among 5 stocks with leverage up to 5x.
+    2. You can use leverage to allocate up to 500% across all stocks, or short stocks by using negative allocations.
+    3. Stock prices are fetched live for the first round. Subsequent rounds simulate prices.
+    4. Your goal is to maximize returns compared to 9 AI players.""")
 
-  gamerunning = ""
-  while gamerunning not in ["go", "no"]:
-      gamerunning = input("Write 'go' when you're ready to start, or 'no' to exit: ").strip().lower()
-      if gamerunning == "no":
-          print("Exiting the game. Goodbye!")
-          exit()  # Exit the program
-      elif gamerunning != "go":
-          print("Invalid input. Please type 'go' to start or 'no' to exit.")
+    gamerunning = ""
+    while gamerunning not in ["go", "no"]:
+        gamerunning = input("Write 'go' when you're ready to start, or 'no' to exit: ").strip().lower()
+        if gamerunning == "no":
+            print("Exiting the game. Goodbye!")
+            exit()  # Exit the program
+        elif gamerunning != "go":
+            print("Invalid input. Please type 'go' to start or 'no' to exit.")
 
-  global stocks
-  print(f"The stocks being traded are: {list(stocks.keys())}")  # List stock names
+    global stocks
+    global user_values
+    global ai_values
+    global period_range
+    print(f"The stocks being traded are: {list(stocks.keys())}")  # List stock names
 
-  # User inputs the number of periods for the game
-  num_periods = 0
-  while num_periods < 2 or num_periods > 10:
-      try:
-          num_periods = int(input("Enter the number of rounds you want to play (minimum 2, maximum 10): "))
-          if num_periods < 2:
-              print("Please enter a positive number greater than 1.")
-          elif num_periods > 10:
-              print("Please enter a number between 2 and 10.")
-      except ValueError:
-          print("Invalid input. Please enter a valid number.")
+    # User inputs the number of periods for the game
+    num_periods = 0
+    while num_periods < 2 or num_periods > 10:
+        try:
+            num_periods = int(input("Enter the number of rounds you want to play (minimum 2, maximum 10): "))
+            if num_periods < 2:
+                print("Please enter a positive number greater than 1.")
+            elif num_periods > 10:
+                print("Please enter a number between 2 and 10.")
+        except ValueError:
+            print("Invalid input. Please enter a valid number.")
 
-  live_prices = get_live_data()  # Fetch stock prices for the first round
-  display_stock_prices(live_prices)  # Display live prices to the user
-  user_allocation = start_allocation(live_prices)  # User inputs portfolio allocation percentages
+    live_prices = get_live_data()  # Fetch stock prices for the first round
+    display_stock_prices(live_prices)  # Display live prices to the user
+    user_allocation = start_allocation(live_prices)  # User inputs portfolio allocation percentages
 
-  # ** Initialize Portfolio Values **
-  user_portfolio_value = 100  # Initial user portfolio value
-  ai_portfolio_values = [100] * 9  # Initial portfolio values for nine AI players
+    # ** Initialize Portfolio Values **
+    user_portfolio_value = 100  # Initial user portfolio value
+    ai_portfolio_values = [100] * 9  # Initial portfolio values for nine AI players
 
-  # AI random portfolio allocations
-  ai_allocations = [
-      np.random.dirichlet(np.ones(len(live_prices))) * 100 for _ in range(9)
-  ]  # Generate random AI portfolio allocations summing to 100%
+    # AI random portfolio allocations
+    ai_allocations = [
+        np.random.dirichlet(np.ones(len(live_prices))) * 100 for _ in range(9)
+    ]  # Generate random AI portfolio allocations summing to 100%
 
-  # Initialize lists for tracking portfolio values over time
-  user_values = [user_portfolio_value]  # Track user portfolio values
-  ai_values = [[value] for value in ai_portfolio_values]  # Track AI portfolio values
-  period_range = [1]  # Periods start at 1
+    # Initialize lists for tracking portfolio values over time
+    user_values = [user_portfolio_value]  # Track user portfolio values
+    ai_values = [[value] for value in ai_portfolio_values]  # Track AI portfolio values
+    period_range = [1]  # Periods start at 1
 
-  previous_prices = live_prices  # Set starting prices for the first period
+    previous_prices = live_prices  # Set starting prices for the first period
 
-  # Display Initial Portfolio Values for Period 1
-  print(f"\n--- Period 0 ---")
-  print("Initial Portfolio Values:")
-  print(f"Your Portfolio Value: ${user_portfolio_value:.2f}")
-  for i, ai_value in enumerate(ai_portfolio_values):
-      print(f"AI {i + 1} Portfolio Value: ${ai_value:.2f}")
+    # Display Initial Portfolio Values for Period 1
+    print(f"\n--- Period 0 ---")
+    print("Initial Portfolio Values:")
+    print(f"Your Portfolio Value: ${user_portfolio_value:.2f}")
+    for i, ai_value in enumerate(ai_portfolio_values):
+        print(f"AI {i + 1} Portfolio Value: ${ai_value:.2f}")
 
-    # Game Loop (from Period 1 onwards)
-  for period in range(1, num_periods + 1):  # Start loop from period 1
+        # Game Loop (from Period 1 onwards)
+    for period in range(1, num_periods + 1):  # Start loop from period 1
         print(f"\n--- Period {period} ---")
         period_range.append(period)  # Add current period to the list for tracking
 
@@ -417,13 +423,18 @@ def trading_game():
         # Update previous prices for the next period
         previous_prices = stock_data_cleaned
 
-  # Final Results
-  if user_portfolio_value > 1:  # If the user wasn't wiped out, finalize normally
-      display_results(user_values[-1], [ai_values[i][-1] for i in range(9)])  # Show results for user and AI players
-      visualize_performance(stockprices_history, user_values, ai_values, period_range)
-  else:
-      print("--- Final Results ---")
-      print("You were wiped out and couldn't recover. Better luck next time!")
+     # Final Results
+    if user_portfolio_value > 1:  # If the user wasn't wiped out, finalize normally
+        display_results(user_values[-1], [ai_values[i][-1] for i in range(9)])  # Show results for user and AI players
+        visualize_performance(stockprices_history, user_values, ai_values, period_range)
+
+    else:
+        print("--- Final Results ---")
+        print("You were wiped out and couldn't recover. Better luck next time!")
+        visualize_performance(stockprices_history, user_values, ai_values, period_range)
+    exit()
+        
+   
 
 if __name__ == "__main__":
     trading_game()
