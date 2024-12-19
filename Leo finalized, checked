@@ -173,7 +173,8 @@ def start_allocation(stock_data):
 
     # Loop through all stocks to collect allocations
     for stock in stock_data.keys():
-        while True:  # Ensure valid input for each stock
+        allocating=True
+        while allocating:  # Ensure valid input for each stock
             try:
                 allocation = float(input(f"Enter % allocation to {stock} (can be negative for short positions): "))
                 if total_allocation + abs(allocation) > 500:  # Check leverage constraint
@@ -181,7 +182,7 @@ def start_allocation(stock_data):
                 else:
                     user_allocation.append(allocation)
                     total_allocation += abs(allocation)  # Update total absolute allocation
-                    break
+                    allocating=False #get out of the loop because allocation is completed
             except ValueError:
                 print("Invalid input. Please enter numeric values only.")
 
@@ -344,8 +345,6 @@ def trading_game():
               print("Please enter a positive number greater than 1.")
           elif num_periods > 10:
               print("Please enter a number between 2 and 10.")
-          else:
-              break
       except ValueError:
           print("Invalid input. Please enter a valid number.")
 

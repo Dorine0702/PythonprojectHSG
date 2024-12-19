@@ -386,3 +386,5 @@ def trading_game():
     
 if __name__ == "__main__":
     trading_game()
+
+print(stockprices_history)
