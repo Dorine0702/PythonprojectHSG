@@ -386,9 +386,20 @@ def trading_game():
         print(f"\n--- Period {period} ---")
         period_range.append(period)  # Add current period to the list for tracking
 
-        # Forecast stock prices for the current period
-        stock_data = launch_prices_forecast()  # Randomly simulate stock prices for this round
+        stock_data = launch_prices_forecast()  # Randomly simulate stock prices for this round and inform users about market trends
         stock_data_cleaned = prepare_data(stock_data)  # Clean and format simulated prices
+
+        # Prompt for Portfolio Adjustment
+        adjust = input("\nPress Enter to keep your current portfolio, or type 'yes' to adjust allocations: ").strip().lower()
+        if adjust == "yes":
+            print("Adjusting portfolio allocations.")
+            user_allocation = start_allocation(stock_data_cleaned)
+        else:
+            print("Keeping the same portfolio allocations.")
+
+        # Forecast stock prices for the current period
+        
+        
         display_stock_prices(stock_data_cleaned)  # Display stock prices to the user
 
         # ** User Portfolio Update **
@@ -412,13 +423,7 @@ def trading_game():
         for i, ai_value in enumerate(ai_portfolio_values):
             print(f"AI {i + 1} Portfolio Value: ${ai_value:.2f}")
 
-        # Prompt for Portfolio Adjustment
-        adjust = input("\nPress Enter to keep your current portfolio, or type 'yes' to adjust allocations: ").strip().lower()
-        if adjust == "yes":
-            print("Adjusting portfolio allocations.")
-            user_allocation = start_allocation(stock_data_cleaned)
-        else:
-            print("Keeping the same portfolio allocations.")
+        
 
         # Update previous prices for the next period
         previous_prices = stock_data_cleaned
